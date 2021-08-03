@@ -2,10 +2,12 @@ import stripe
 from simple_salesforce import Salesforce
 from flask import Flask, request, Response
 
-stripe.api_key = "sk_test_KRMK2P5q4UK0mImlhuOAboZx"
+import config
+
+stripe.api_key = config.stripe_api_key
 
 # https://github.com/simple-salesforce/simple-salesforce
-sf = Salesforce(instance_url='https://godschild.lightning.force.com', session_id='')
+sf = Salesforce(instance_url=config.sf_instance_url, session_id='')
 
 app = Flask(__name__)
 
