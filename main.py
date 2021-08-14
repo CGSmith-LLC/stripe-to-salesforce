@@ -13,6 +13,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def payment_to_salesforce():
+
     data = dict(request.form)
 
     # Create the event object from the payload
