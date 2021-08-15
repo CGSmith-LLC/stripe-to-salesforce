@@ -52,7 +52,7 @@ def payment_to_salesforce():
             'Type': ''
         })
 
-    return Response(status=400)
+    return Response(status=200)
 
 
 @app.route(sf_auth_slug)
