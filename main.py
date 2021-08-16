@@ -14,9 +14,9 @@ config = json.load(open(os.path.join(application_path, 'config.json')))
 sf_auth_slug = config['sf_auth_slug']
 sf_webhook_slug = config['sf_webhook_slug']
 
-# https://github.com/simple-salesforce/simple-salesforce
-stripe.api_key = config['stripe_api_key']
-sf = Salesforce(instance_url=config['sf_instance_url'], session_id='')
+# # https://github.com/simple-salesforce/simple-salesforce
+# stripe.api_key = config['stripe_api_key']
+# sf = Salesforce(instance_url=config['sf_instance_url'], session_id='')
 
 
 def get_log_name():
@@ -41,41 +41,41 @@ def get_log_name():
     return logName
 
 
-@app.route(sf_webhook_slug)
-def payment_to_salesforce():
-    # Update the log parameters with the new filename
-    reportName = get_log_name()
-    logging.basicConfig(filename=reportName, level=logging.INFO, format=' %(asctime)s -  %(levelname)s -  %(message)s')
-
-    data = dict(request.form)
-
-    # Create the event object from the payload
-    # https://stripe.com/docs/payments/handling-payment-events#create-webhook
-    try:
-        event = stripe.Event.construct_from(data, stripe.api_key)
-    except ValueError:
-        return Response('Invalid payload', status=400)
-
-    # Process the new charge event
-    if event.type == 'charge.succeeded':
-        charge = event.data.object  # Charge obj: https://stripe.com/docs/api/charges/object
-
-        # When the new subscription is added, it will create the charge.succeeded event as well (along with
-        # customer.subscription.created event). Learn more: https://stripe.com/docs/api/events
-
-        # todo Create a Salesforce opportunity
-        # https://developer.salesforce.com/docs/atlas.en-us.sfFieldRef.meta/sfFieldRef/salesforce_field_reference_Opportunity.htm
-        sf.Opportunity.create({
-            'AccountId': '',
-            'Name': '',
-            'Description': 'Payment from ' + charge.billing_details.name,
-            'Amount': charge.amount,
-            'LeadSource': '',
-            'Probability': '',
-            'Type': ''
-        })
-
-    return Response(status=200)
+# @app.route(sf_webhook_slug)
+# def payment_to_salesforce():
+#     # Update the log parameters with the new filename
+#     reportName = get_log_name()
+#     logging.basicConfig(filename=reportName, level=logging.INFO, format=' %(asctime)s -  %(levelname)s -  %(message)s')
+#
+#     data = dict(request.form)
+#
+#     # Create the event object from the payload
+#     # https://stripe.com/docs/payments/handling-payment-events#create-webhook
+#     try:
+#         event = stripe.Event.construct_from(data, stripe.api_key)
+#     except ValueError:
+#         return Response('Invalid payload', status=400)
+#
+#     # Process the new charge event
+#     if event.type == 'charge.succeeded':
+#         charge = event.data.object  # Charge obj: https://stripe.com/docs/api/charges/object
+#
+#         # When the new subscription is added, it will create the charge.succeeded event as well (along with
+#         # customer.subscription.created event). Learn more: https://stripe.com/docs/api/events
+#
+#         # todo Create a Salesforce opportunity
+#         # https://developer.salesforce.com/docs/atlas.en-us.sfFieldRef.meta/sfFieldRef/salesforce_field_reference_Opportunity.htm
+#         sf.Opportunity.create({
+#             'AccountId': '',
+#             'Name': '',
+#             'Description': 'Payment from ' + charge.billing_details.name,
+#             'Amount': charge.amount,
+#             'LeadSource': '',
+#             'Probability': '',
+#             'Type': ''
+#         })
+#
+#     return Response(status=200)
 
 
 @app.route(sf_auth_slug)
@@ -99,16 +99,14 @@ def salesforce_authorization():
 
     if token:
         logging.info('The app authorization url is called but the app is already authorized')
-        return 'The app is already authorized'
+        return '<h1>The app is already authorized</h1>'
     else:
         # Check if user returned from the authorization page with the code
         authCode = request.args.get('code')
         if authCode:
             # Send the code to get the access token
             headers = {
-                'Host': 'godschild.lightning.force.com',
-                'Content-type': 'application/x-www-form-urlencoded',
-
+                'Content-type': 'application/x-www-form-urlencoded'
             }
             data = {
                 'grant_type': 'authorization_code',
@@ -117,11 +115,14 @@ def salesforce_authorization():
                 'client_secret': config["sf_consumer_secret"],
                 'redirect_uri': config["app_address"] + config["sf_auth_slug"]
             }
-            response = requests.post('https://godschild.lightning.force.com/services/oauth2/token',
+            response = requests.post('https://login.salesforce.com/services/oauth2/token',
                                      data=data,
                                      headers=headers)
 
             try:
+                if 'refresh_token' in response.json():
+                    config['refresh_token'] = response.json()['refresh_token']
+                    logging.info(str(response.json()))
                 if 'access_token' in response.json():
                     config['access_token'] = response.json()['access_token']
                 else:
@@ -139,7 +140,7 @@ def salesforce_authorization():
 
             logging.info('The app got authorized')
 
-            return f'The app is authorized.'
+            return f'<h1>The app is authorized, thank you.</h1>'
 
         else:
             # send the authorization request to get the code
