@@ -113,7 +113,7 @@ def salesforce_authorization():
                 'code': authCode,
                 'client_id': config["sf_consumer_key"],
                 'client_secret': config["sf_consumer_secret"],
-                'redirect_uri': config["app_address"] + config["sf_auth_slug"]
+                'redirect_uri': config["app_address"] + config["sf_auth_slug"],
             }
             response = requests.post('https://login.salesforce.com/services/oauth2/token',
                                      data=data,
@@ -148,7 +148,7 @@ def salesforce_authorization():
                           f'response_type=code&' \
                           f'client_id={config["sf_consumer_key"]}&' \
                           f'redirect_uri={config["app_address"]}{config["sf_auth_slug"]}&' \
-                          f'scope=full'
+                          f'scope=full%20refresh_token'
             logging.info('The app authorization url is called, no token found. Redirecting to ' + redirectUrl)
             return redirect(redirectUrl)
 
